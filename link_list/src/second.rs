@@ -1,35 +1,27 @@
 use std::mem;
 use std::fmt::Display;
 
-pub struct List<T> where T: Clone + Default {
+pub struct List<T> where T: Default {
     head: Link<T>,
 }
 
-enum Link<T> where T: Clone + Default {
+enum Link<T> where T: Default {
     Empty,
     More(Box<Node<T>>),
 }
 
-struct Node<T> where T: Clone + Default {
+struct Node<T> where T: Default {
     elem: T,
     next: Link<T>,
 }
 
-impl<T: Clone + Default> List<T> {
+impl<T: Default> List<T> {
     pub fn new() -> Self {
         List { head: Link::Empty }
     }
 }
 
-impl<T: Clone + Default> List<T> {
-    pub fn clone_push(&mut self, elem: T) {
-        let new_node: Node<T> = Node {
-            elem: elem,
-            next: self.head.clone(),
-        };
-        self.head = Link::More(Box::new(new_node));
-    }
-
+impl<T: Default> List<T> {
     pub fn push(&mut self, elem: T) {
         let new_node: Node<T> = Node {
             elem: elem,
@@ -39,8 +31,8 @@ impl<T: Clone + Default> List<T> {
     }
 
     pub fn pop(&mut self) -> T {
-        if let Link::More(node) = mem::replace(&mut self.head, Link::Empty) {
-            let pop_elem = node.elem.clone();
+        if let Link::More(mut node) = mem::replace(&mut self.head, Link::Empty) {
+            let pop_elem = mem::replace(&mut node.elem, T::default());
             self.head = node.next;
             return pop_elem;
         } else {
@@ -49,7 +41,7 @@ impl<T: Clone + Default> List<T> {
     }
 }
 
-impl<T: std::fmt::Display + Default + Clone> List<T> {
+impl<T: std::fmt::Display + Default> List<T> {
     pub fn show_stack(&self, verbose:bool, single_line:bool) {
         if verbose {
             println!("Current stack:");
@@ -69,52 +61,14 @@ impl<T: std::fmt::Display + Default + Clone> List<T> {
     }
 }
 
-impl<T: Clone + Default> Clone for Link<T> {
-    fn clone(&self) -> Link<T> {
-        match self {
-            Link::Empty => Link::Empty,
-            Link::More(next) => Link::More(next.clone()),
-        }
-    }
-}
-
-impl<T: Clone + Default> Clone for Node<T> {
-    fn clone(&self) -> Node<T> {
-        Node {
-            elem: self.elem.clone(),
-            next: self.next.clone(),
-        }
-    }
-}
-
-// impl<T: Clone + Default> Drop for List<T> {
-//     fn drop(&mut self) {
-//         let mut ptr = mem::replace(&mut self.head, Link::Empty);
-//         while let Link::More(node) = ptr{
-//             ptr = mem::replace(&mut node.next, Link::Empty);
-//         }
-//     }
-// }
-
-impl<T: Clone + Default> Drop for List<T> {
+impl<T: Default> Drop for List<T> {
     fn drop(&mut self) {
         let mut ptr = mem::replace(&mut self.head, Link::Empty);
-        loop {
-            match ptr {
-                Link::More(mut node) => {
-                    ptr = mem::replace(&mut node.next, Link::Empty);
-                },
-                Link::Empty => {
-                    break;
-                }
-            }
+        while let Link::More(mut node) = ptr{
+            ptr = mem::replace(&mut node.next, Link::Empty);
         }
-        // while let Link::More(node) = ptr{
-        //     ptr = mem::replace(&mut node.next, Link::Empty);
-        // }
     }
 }
-
 
 mod test {
     #[test]
