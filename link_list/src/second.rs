@@ -5,10 +5,7 @@ pub struct List<T> where T: Default {
     head: Link<T>,
 }
 
-enum Link<T> where T: Default {
-    Empty,
-    More(Box<Node<T>>),
-}
+type Link<T> = Option<Box<Node<T>>>;
 
 struct Node<T> where T: Default {
     elem: T,
@@ -17,7 +14,7 @@ struct Node<T> where T: Default {
 
 impl<T: Default> List<T> {
     pub fn new() -> Self {
-        List { head: Link::Empty }
+        List { head: None }
     }
 }
 
@@ -25,19 +22,22 @@ impl<T: Default> List<T> {
     pub fn push(&mut self, elem: T) {
         let new_node: Node<T> = Node {
             elem: elem,
-            next: mem::replace(&mut self.head, Link::Empty)
+            next: self.head.take()
         };
-        self.head = Link::More(Box::new(new_node));
+        self.head = Some(Box::new(new_node));
     }
 
     pub fn pop(&mut self) -> T {
-        if let Link::More(mut node) = mem::replace(&mut self.head, Link::Empty) {
-            let pop_elem = mem::replace(&mut node.elem, T::default());
+        self.head.take().map(|node| {
             self.head = node.next;
-            return pop_elem;
-        } else {
-            panic!("Can not pop from an empty stack.");
-        }
+            node.elem
+        }).unwrap()
+    }
+
+    pub fn top(&self) -> &T {
+        self.head.as_ref().map(|node|{
+            &node.elem
+        }).unwrap()
     }
 }
 
@@ -47,7 +47,7 @@ impl<T: std::fmt::Display + Default> List<T> {
             println!("Current stack:");
         }
         let mut ptr: &Link<T> = &self.head;
-        while let Link::More(node) = ptr {
+        while let Some(node) = ptr {
             if single_line {
                 print!("{}, ", node.elem);
             } else {
@@ -63,9 +63,9 @@ impl<T: std::fmt::Display + Default> List<T> {
 
 impl<T: Default> Drop for List<T> {
     fn drop(&mut self) {
-        let mut ptr = mem::replace(&mut self.head, Link::Empty);
-        while let Link::More(mut node) = ptr{
-            ptr = mem::replace(&mut node.next, Link::Empty);
+        let mut ptr = self.head.take();
+        while let Some(mut node) = ptr{
+            ptr = node.next.take();
         }
     }
 }
