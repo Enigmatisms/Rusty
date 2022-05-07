@@ -66,7 +66,7 @@ impl<T> Drop for MultiLink<T> {
         // 为什么这里可以take呢？因为链表中一定没有关于self.head的引用（有的话就不是head了）
         while let Some(rc) = ptr {            // 此node是Rc<Node<T>>
             match Rc::try_unwrap(rc) {
-                Ok(mut node) => {
+                Ok(mut node) => {               // 此处的mut与ref一样，都是node类型的一个标识
                     ptr = node.next.take();
                 },
                 _ => {

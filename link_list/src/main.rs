@@ -1,4 +1,5 @@
 mod first;
+mod fourth;
 use rand::Rng;
 use std::time::Instant;
 
@@ -40,6 +41,19 @@ fn test_push_pop() {
     }
 }
 
+fn test_double_link() {
+    let mut dl = fourth::DoubleList::new();
+    dl.push_front(1);
+    dl.push_front(2);
+    dl.push_back(4);
+    dl.push_back(5);
+    dl.push_back(6);
+    dl.push_front(3);
+    dl.push_back(7);
+    dl.push_front(0);
+    dl.show_links();
+}
+
 fn main() {
-    test_push_pop();
+    test_double_link();
 }
