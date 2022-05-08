@@ -51,6 +51,20 @@ fn test_double_link() {
     dl.push_front(3);
     dl.push_back(7);
     dl.push_front(0);
+    // dl.show_links();
+    // println!("{:#?}", dl.pop_front().unwrap());
+    dl.show_links();
+    dl.pop_front();
+    dl.show_links();
+    dl.pop_front();
+    dl.show_links();
+    dl.pop_front();
+    dl.show_links();
+    dl.pop_front();
+    dl.show_links();
+    // println!("{:#?}", dl.pop_back().unwrap());
+    // dl.show_links();
+    dl.pop_back();
     dl.show_links();
 }
 

@@ -33,22 +33,22 @@ impl<T> DoubleList<T> {
             prev: None,
             next: self.head.clone()
         };
-        let wrapped_node = Some(Rc::new(RefCell::new(new_node)));
+        let wrapped_node = Rc::new(RefCell::new(new_node));
         if let Some(node) = self.head.take() {
             let mut inner_node = node.borrow_mut();
             // let _:() = inner_node;
-            inner_node.prev = wrapped_node.clone();           // Rc的clone应该开销比较小
-            self.head = wrapped_node;
+            inner_node.prev = Some(wrapped_node.clone());           // Rc的clone应该开销比较小
+            self.head = Some(wrapped_node);
         } else {                                        // 如果原来链表为空，则需要设置tail
-            self.tail = wrapped_node.clone();
-            self.head = wrapped_node;
+            self.tail = Some(wrapped_node.clone());
+            self.head = Some(wrapped_node);
         }
     }
 
     pub fn push_back(&mut self, elem: T) {
         let new_node = Node {
             elem: elem,
-            prev: self.head.clone(),
+            prev: self.tail.clone(),
             next: None
         };
         let wrapped_node = Some(Rc::new(RefCell::new(new_node)));
@@ -62,35 +62,31 @@ impl<T> DoubleList<T> {
             self.head = wrapped_node;
         }
     }
+    
 
     pub fn pop_front(&mut self) -> Option<T> {
-        self.head.take().and_then(|node| {
-            let mut inner_node = Rc::try_unwrap(node).ok().unwrap().into_inner();
-            if let Some(next_node) = inner_node.next.take() {           // take返回值，信息都在next_node中，只需要根据next_node重写head即可，故可以take
-                next_node.borrow_mut().prev = None;
+        self.head.take().map(|node|{            // node 类型是 Rc<RefCell<Node<T>>>
+            if let Some(next_node) = node.borrow_mut().next.take() {
+                next_node.borrow_mut().prev.take();         // 消除一个ref_count
                 self.head = Some(next_node);
-            } else {
-                self.tail = None;
+            } else {                                        // 只有head（tail）
+                self.tail.take();
             }
-            Some(inner_node.elem)
+            Rc::try_unwrap(node).ok().unwrap().into_inner().elem
         })
     }
 
     pub fn pop_back(&mut self) -> Option<T> {
-        self.tail.take().and_then(|node|{            // 如果tail是None，就不会执行此函数
-            let mut inner_node = match Rc::try_unwrap(node).ok() {
-                Some(node) => node.into_inner(),
-                None => return None
-            };
-            if let Some(prev_node) = inner_node.next.take() {
-                prev_node.borrow_mut().next = None;
+        self.tail.take().map(|node|{
+            if let Some(prev_node) = node.borrow_mut().prev.take() {
+                prev_node.borrow_mut().next.take();
                 self.tail = Some(prev_node);
             } else {
-                self.head = None;
+                self.head.take();
             }
-            Some(inner_node.elem)
-        }) 
-    }   // 注意，map需要返回值是U，而不是Option<U>
+            Rc::try_unwrap(node).ok().unwrap().into_inner().elem
+        })
+    }
 }
 
 impl<T: Display> DoubleList<T> {
@@ -101,6 +97,18 @@ impl<T: Display> DoubleList<T> {
             print!("{}, ", rc.borrow().elem);
         }
         print!("\n");
+    }
+}
+
+impl<T> Drop for DoubleList<T> {
+    // 显然还有更简单的方法，直接复用pop
+    fn drop(&mut self) {
+        let mut ptr = self.head.take();
+        while let Some(node) = ptr {
+            node.borrow_mut().prev.take();
+            ptr = node.borrow_mut().next.take();
+        }
+        self.tail.take();
     }
 }
 
