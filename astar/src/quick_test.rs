@@ -1,5 +1,5 @@
 use std::cmp::Ordering;
-use array2d::Array2d;
+use array2d::Array2D;
 
 #[derive(Eq)]
 pub struct Test {
@@ -30,7 +30,7 @@ pub struct Pos3(pub i32, pub i32, pub i32);
 
 impl Pos3 {
     pub fn hash(&self) -> i32 {
-        if (self.0 >= self.1) {
+        if self.0 >= self.1 {
             self.0 * self.0 + self.1
         } else {
             self.1 * self.1 + self.0

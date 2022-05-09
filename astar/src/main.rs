@@ -59,7 +59,7 @@ fn test_hash () {
 }
 
 fn test_array2d() {
-    use array2d::Array2d;
+    use array2d::Array2D;
     let rows = vec![
         vec![1, 1, 1, 1, 1, 1, 1],
         vec![1, 0, 0, 0, 0, 0, 1],

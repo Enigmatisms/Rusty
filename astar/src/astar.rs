@@ -9,6 +9,8 @@
 */
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
+use std::collections::HashMap;
+use array2d::Array2D;
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub struct Pos2(pub i32, pub i32);
@@ -21,20 +23,21 @@ impl Pos2 {
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub struct Pos3(pub i32, pub i32, pub i32);
 impl Pos3 {
-    pub fn hash(&self) -> i32 {
-        if (self.0 >= self.1) {
-            self.0 * self.0 + self.1
-        } else {
-            self.1 * self.1 + self.0
-        }
+    pub fn hash(x: i32, y: i32) -> i32 {
+        y << 16 + x
     }
+
+    pub fn hash(&self) -> i32 {
+        Pos3::hash(self.0, self.1)
+    }
+
 }
 
 // ============= Node for min heap ===============
 #[derive(Eq)]
 pub struct Node {
     pub score: i32,
-    pub Pos2: Pos2
+    pub Pos3: Pos3
 }
 
 impl Ord for Node {
@@ -61,8 +64,46 @@ pub struct Astar<'a> {
     heap: BinaryHeap<Node>,
     current_pos: Pos3,
     start_pos: Pos2,
-    goal_pos: Pos2
-    map: &'a 
+    goal_pos: Pos2,
+    map: &'a Array2D<i32>
+}
+
+impl<'a> Astar<'a> {
+    pub fn new(start_p: &Pos2, end_p: &Pos2, map_ref: &'a Array2D<i32>) -> Astar<'a> {
+        let astar_ret = Astar {
+            open_set: HashMap::new(),
+            close_set: HashMap::new(),
+            heap: BinaryHeap::new(),
+            current_pos: Pos3(start_p.0, start_p.1, -1),
+            start_pos: Pos2(start_p.0, start_p.1),
+            goal_pos: Pos2(end_p.0, end_p.1),
+            map: map_ref
+        };
+        astar_ret
+    }
+
+    pub fn score(&self, x: i32, y: i32) -> i32 {
+        0
+    }
+
+    pub fn neighbor_search(&mut self) {
+        let current_hash = Pos3::hash(current_pos.0, current_pos.1);
+        for dx in (-1)..2 {
+            for dy in (-1)..2 {
+                if (dx == 0) && (dy == 0) {continue;}                   // 当前点，跳出
+                let x = current_pos.0 + dx;
+                let y = current_pos.1 + dy;
+                let hash_xy = Pos3::hash(x, y);
+                if close_set.contains_key(&hash_xy) {continue;}         // 当前点在 close set中
+                if open_set.contains_key(&hash_xy) {continue;}          // 当前点在 open set中 直接跳过
+                let new_node = Node {
+                    score: self.score(x, y),
+                    Pos3(x, y, current_hash)
+                }
+                open_set.insert(hash_xy, );
+            }
+        }
+    }
 }
 
 mod test {
@@ -72,10 +113,10 @@ mod test {
     #[test]
     fn min_heap_test() {
         let mut min_heap: BinaryHeap<Reverse<super::Node>> = BinaryHeap::new();
-        let n1 = super::Node{score: 21, Pos2: super::Pos2(4, 5)};
-        let n2 = super::Node{score: 4, Pos2: super::Pos2(1, 2)};
-        let n3 = super::Node{score: 78, Pos2: super::Pos2(6, 8)};
-        let n4 = super::Node{score: 5, Pos2: super::Pos2(9, 3)};
+        let n1 = super::Node{score: 21, Pos2: super::Pos3(4, 5, 10)};
+        let n2 = super::Node{score: 4, Pos2: super::Pos3(1, 2, 23)};
+        let n3 = super::Node{score: 78, Pos2: super::Pos3(6, 8, 9)};
+        let n4 = super::Node{score: 5, Pos2: super::Pos3(9, 3, -3)};
         min_heap.push(Reverse(n1));
         min_heap.push(Reverse(n2));
         min_heap.push(Reverse(n3));
