@@ -1,4 +1,7 @@
 mod quick_test;
+mod astar;
+
+use array2d::Array2D;
 
 fn test_heap() {
     use std::collections::BinaryHeap;
@@ -58,22 +61,49 @@ fn test_hash () {
     println!("tp2 ({}, {}, {}) in hash_map ? {}", tp2.0, tp2.1, tp2.2, hash_map.contains_key(&tp2.hash()));
 }
 
+fn print_map(map: & Array2D<i32>) {
+    for i in 0..map.num_rows() {
+        for j in 0..map.num_rows() {
+            print!("{} ", map[(i, j)]);
+        }
+        print!("\n");
+    }
+}
+
 fn test_array2d() {
-    use array2d::Array2D;
     let rows = vec![
-        vec![1, 1, 1, 1, 1, 1, 1],
-        vec![1, 0, 0, 0, 0, 0, 1],
-        vec![1, 1, 1, 1, 1, 0, 1],
-        vec![1, 0, 0, 0, 1, 0, 1],
-        vec![1, 0, 1, 0, 1, 0, 1],
-        vec![1, 0, 1, 0, 0, 0, 1],
-        vec![1, 1, 1, 1, 1, 1, 1],
+        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        vec![1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1],
+        vec![1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1],
+        vec![1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1],
+        vec![1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+        vec![1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     ];
-    let array = Array2D::from_rows(&rows);
-    println!("arr[{}, {}] = {}", 3, 4, array[(3, 4)]);
-    println!("arr[{}, {}] = {}", 0, 0, array[(0, 0)]);
-    println!("arr[{}, {}] = {}", 6, 6, array[(6, 6)]);
-    println!("arr[{}, {}] = {}", 5, 5, array[(5, 5)]);
+    let mut array = Array2D::from_rows(&rows);
+    print_map(&array);
+    println!("Result before solving is shown above");
+    let start_p = astar::Pos2(1, 1);
+    let goal_p = astar::Pos2(1, 17);
+    let mut astar_solver = astar::Astar::new(&start_p, &goal_p, &mut array);
+    astar_solver.astar_solver();
+    print_map(&array);
+    // println!("arr[{}, {}] = {}", 3, 4, array[(3, 4)]);
+    // println!("arr[{}, {}] = {}", 0, 0, array[(0, 0)]);
+    // println!("arr[{}, {}] = {}", 6, 6, array[(6, 6)]);
+    // println!("arr[{}, {}] = {}", 5, 5, array[(5, 5)]);
 }
 
 fn main() {
