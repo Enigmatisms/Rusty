@@ -23,7 +23,7 @@ impl Pos2 {
 pub struct Pos3(pub i32, pub i32, pub i32);
 impl Pos3 {
     pub fn hash(x: i32, y: i32) -> i32 {
-        y << 16 + x
+        (y << 16) + x
     }
 
     pub fn hash_(&self) -> i32 {
@@ -138,7 +138,7 @@ impl<'a> Astar<'a> {
         let mut init_flag = false;
         loop {
             if let Some(current_node) = self.heap.pop() {
-                println!("current node: {}, {}", current_node.pos.0, current_node.pos.1);
+                // println!("current node: {}, {}, {}", current_node.pos.0, current_node.pos.1, self.heap.len());
                 if current_node.pos.0 == self.goal_pos.0 && current_node.pos.1 == self.goal_pos.1 {
                     self.trace_back(current_node.pos.2);
                     println!("A* algorithm completed successfully.");
@@ -151,7 +151,7 @@ impl<'a> Astar<'a> {
                 self.close_set.insert(current_hash, current_node.pos);      // TODO: 考虑重构clone
                 self.neighbor_search(&current_node, current_hash);
             } else {
-                println!("There is no path from starting point to the goal.");
+                println!("There is no path from starting point to the goal. {}", self.heap.len());
                 break;
             }
         }
