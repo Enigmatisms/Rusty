@@ -1,35 +1,18 @@
-/*
-如何实现？这里有三个主要的数据结构：
-（1）BinaryHeap用于实现 min Heap,此heap需要存储Reverse<节点>
-（2）HashSet，实现OpenSet，CloseSet快速查找
-（3）二维数组（存储实际的地图）
-  close set中需要存储什么？个人认为存储的应该是一个三元组(i32, i32, i32) 最后一个值是其父亲的Hash值
-  open set与close set类型一样：HaspMap<i32, Pos3>
-  min heap (open set 带分数) 则是 BinaryHeap<Node>，注意Node中存储启发分数的负值（以构建最小堆）
-*/
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet, BinaryHeap};
 use array2d::Array2D;
 
+static neighbor_table: [(i32, i32); 8] = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)];
+
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub struct Pos2(pub i32, pub i32);
-impl Pos2 {
-    pub fn new(x: i32, y: i32) -> Pos2 {
-        Pos2(x, y)
-    }
-}
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub struct Pos3(pub i32, pub i32, pub i32);
 impl Pos3 {
     pub fn hash(x: i32, y: i32) -> i32 {
-        (y << 16) + x
+        (y << 8) + x
     }
-
-    pub fn hash_(&self) -> i32 {
-        Pos3::hash(self.0, self.1)
-    }
-
 }
 
 // ============= Node for min heap ===============
@@ -80,29 +63,25 @@ impl<'a> Astar<'a> {
         astar_ret
     }
 
+    #[inline(always)]
     fn score(&self, x: i32, y: i32, start_dist: i32) -> i32 {
         -((self.goal_pos.0 - x).abs() + (self.goal_pos.1 - y).abs() + start_dist)
     }
 
     fn neighbor_search(&mut self, current_pos: &Node, current_hash: i32) {
-        for dx in (-1)..2 {
-            for dy in (-1)..2 {
-                if (dx == 0) && (dy == 0) {continue;}                   // 当前点，跳出
-                let x = current_pos.pos.0 + dx;
-                let y = current_pos.pos.1 + dy;
-                let hash_xy = Pos3::hash(x, y);
-                if self.map[(y as usize, x as usize)] > 0 {continue;}           // 是墙，跳过
-                if self.close_set.contains_key(&hash_xy) {continue;}            // 当前点在 close set中
-                if self.open_set.contains(&hash_xy) {continue;}                 // 当前点在 open set中 直接跳过
-                let current_dist = current_pos.start_dist + 1;
-                let new_node = Node {
-                    start_dist: current_dist,
-                    score: self.score(x, y, current_dist),
-                    pos: Pos3(x, y, current_hash)
-                };
-                self.open_set.insert(hash_xy);
-                self.heap.push(new_node);
-            }
+        for (dx, dy) in neighbor_table.iter() {
+            let x = current_pos.pos.0 + dx;
+            let y = current_pos.pos.1 + dy;
+            let hash_xy = Pos3::hash(x, y);
+            if self.map[(y as usize, x as usize)] > 0 {continue;}           // 是墙，跳过
+            if self.open_set.contains(&hash_xy) {continue;}                 // 当前点在 open set中 直接跳过
+            let current_dist = current_pos.start_dist + 1;
+            self.open_set.insert(hash_xy);
+            self.heap.push(Node {
+                start_dist: current_dist,
+                score: self.score(x, y, current_dist),
+                pos: Pos3(x, y, current_hash)
+            });
         }
     }
 
@@ -120,15 +99,15 @@ impl<'a> Astar<'a> {
     fn trace_back(&mut self, father_hash: i32) {
         let mut hash_ptr = father_hash;
         let mut now_pos: Pos2 = self.goal_pos;
-        for hash_value in self.open_set.iter() {
-            if *hash_value < 0 {continue;}
-            let y = hash_value >> 16;
-            let x = hash_value % 65536;
-            self.map[(y as usize, x as usize)] = 2;
-        }
-        for (_, node) in self.close_set.iter() {
-            self.map[(node.1 as usize, node.0 as usize)] = 3;
-        }
+        // for hash_value in self.open_set.iter() {
+        //     if *hash_value < 0 {continue;}
+        //     let y = hash_value >> 8;
+        //     let x = hash_value % 256;
+        //     self.map[(y as usize, x as usize)] = 2;
+        // }
+        // for (_, node) in self.close_set.iter() {
+        //     self.map[(node.1 as usize, node.0 as usize)] = 3;
+        // }
         while hash_ptr >= 0 {
             self.map[(now_pos.1 as usize, now_pos.0 as usize)] = 4;
             if let Some(prev_pos) = self.close_set.get(&hash_ptr) {
@@ -153,9 +132,6 @@ impl<'a> Astar<'a> {
                     break;
                 }
                 let current_hash = Pos3::hash(current_node.pos.0, current_node.pos.1);
-                if self.open_set.remove(&current_hash) == false {
-                    panic!("Trying to remove an unexisted value in open set");
-                }
                 self.close_set.insert(current_hash, current_node.pos);      // TODO: 考虑重构clone
                 self.neighbor_search(&current_node, current_hash);
             } else {
