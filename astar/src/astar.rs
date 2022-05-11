@@ -120,8 +120,17 @@ impl<'a> Astar<'a> {
     fn trace_back(&mut self, father_hash: i32) {
         let mut hash_ptr = father_hash;
         let mut now_pos: Pos2 = self.goal_pos;
+        for hash_value in self.open_set.iter() {
+            if *hash_value < 0 {continue;}
+            let y = hash_value >> 16;
+            let x = hash_value % 65536;
+            self.map[(y as usize, x as usize)] = 2;
+        }
+        for (_, node) in self.close_set.iter() {
+            self.map[(node.1 as usize, node.0 as usize)] = 3;
+        }
         while hash_ptr >= 0 {
-            self.map[(now_pos.1 as usize, now_pos.0 as usize)] = 9;
+            self.map[(now_pos.1 as usize, now_pos.0 as usize)] = 4;
             if let Some(prev_pos) = self.close_set.get(&hash_ptr) {
                 now_pos = Pos2(prev_pos.0, prev_pos.1);
                 hash_ptr = prev_pos.2;
@@ -129,19 +138,18 @@ impl<'a> Astar<'a> {
                 panic!("There is a orpan node, sad.");
             }
         }
-        self.map[(now_pos.1 as usize, now_pos.0 as usize)] = 9;
+        self.map[(now_pos.1 as usize, now_pos.0 as usize)] = 4;
     }
 
     pub fn astar_solver(&mut self) {
         self.intialize();
         // 可能需要loop + if else结构
-        let mut init_flag = false;
         loop {
             if let Some(current_node) = self.heap.pop() {
                 // println!("current node: {}, {}, {}", current_node.pos.0, current_node.pos.1, self.heap.len());
                 if current_node.pos.0 == self.goal_pos.0 && current_node.pos.1 == self.goal_pos.1 {
                     self.trace_back(current_node.pos.2);
-                    println!("A* algorithm completed successfully.");
+                    // println!("A* algorithm completed successfully.");
                     break;
                 }
                 let current_hash = Pos3::hash(current_node.pos.0, current_node.pos.1);

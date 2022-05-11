@@ -1,111 +1,115 @@
-mod quick_test;
 mod astar;
-
+use nannou::prelude::*;
 use array2d::Array2D;
 
-fn test_heap() {
-    use std::collections::BinaryHeap;
-    use std::cmp::Reverse;
-    let t1 = quick_test::Test {
-        score: 5,
-        name: String::from("Bob"),
-        id: 218
-    };
-    let t2 = quick_test::Test {
-        score: 7,
-        name: String::from("Alice"),
-        id: 217
-    };
-    let t3 = quick_test::Test {
-        score: 3,
-        name: String::from("Steve"),
-        id: 666
-    };
-    let t4 = quick_test::Test {
-        score: 2,
-        name: String::from("Jeff"),
-        id: 0
-    };
-    let t5 = quick_test::Test {
-        score: 4,
-        name: String::from("Lex"),
-        id: 1255
-    };
-    let mut heap: BinaryHeap<Reverse<quick_test::Test>> = BinaryHeap::new();
-    heap.push(Reverse(t1));
-    heap.push(Reverse(t2));
-    heap.push(Reverse(t3));
-    heap.push(Reverse(t4));
-    heap.push(Reverse(t5));
-    while let Some(popped) = heap.pop() {
-        println!("name:{}, score:{}, id:{}", &popped.0.name, &popped.0.score, &popped.0.id);
-    }
+struct Model {
+    map: Array2D<i32>,
+    offset_x: f32,
+    offset_y: f32,
+    block_width: f32,
+    block_step: f32
 }
 
-fn test_hash () {
-    use std::collections::HashMap;
-    let mut hash_map: HashMap<i32, quick_test::Pos3> = HashMap::new();
-    let p1 = quick_test::Pos3(6, 9, 23);
-    let p2 = quick_test::Pos3(5, 3, 120);
-    let p3 = quick_test::Pos3(9, 17, 332);
-    let p4 = quick_test::Pos3(72, 4, 15);
-    let p5 = quick_test::Pos3(0, 6, 0);
-    let tp1 = quick_test::Pos3(6, 9, 89);
-    let tp2 = quick_test::Pos3(4, 8, 89);
-    hash_map.insert(p1.hash(), p1);
-    hash_map.insert(p2.hash(), p2);
-    hash_map.insert(p3.hash(), p3);
-    hash_map.insert(p4.hash(), p4);
-    hash_map.insert(p5.hash(), p5);
-    println!("tp1 ({}, {}, {}) in hash_map ? {}", tp1.0, tp1.1, tp1.2, hash_map.contains_key(&tp1.hash()));
-    println!("tp2 ({}, {}, {}) in hash_map ? {}", tp2.0, tp2.1, tp2.2, hash_map.contains_key(&tp2.hash()));
-}
-
-fn print_map(map: & Array2D<i32>) {
-    for i in 0..map.num_rows() {
-        for j in 0..map.num_rows() {
-            print!("{} ", map[(i, j)]);
-        }
-        print!("\n");
-    }
-}
-
-fn test_array2d() {
+fn model(app: &App) -> Model {
+    app
+        .new_window()
+        .size(1000, 800)
+        .view(view)
+        .build()
+        .unwrap();
     let rows = vec![
-        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-        vec![1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        vec![1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        vec![1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        vec![1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1],
-        vec![1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        vec![1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        vec![1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        vec![1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
-        vec![1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1],
-        vec![1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1],
-        vec![1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
-        vec![1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
-        vec![1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1],
-        vec![1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
-        vec![1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        vec![1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        vec![1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        vec![1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+        vec![1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1],
+        vec![1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+        vec![1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     ];
     let mut array = Array2D::from_rows(&rows);
-    print_map(&array);
     println!("Result before solving is shown above");
+    let mut time_sum = 0.0;
     let start_p = astar::Pos2(1, 1);
-    let goal_p = astar::Pos2(1, 17);
-    let mut astar_solver = astar::Astar::new(&start_p, &goal_p, &mut array);
-    astar_solver.astar_solver();
-    print_map(&array);
-    // println!("arr[{}, {}] = {}", 3, 4, array[(3, 4)]);
-    // println!("arr[{}, {}] = {}", 0, 0, array[(0, 0)]);
-    // println!("arr[{}, {}] = {}", 6, 6, array[(6, 6)]);
-    // println!("arr[{}, {}] = {}", 5, 5, array[(5, 5)]);
+    let goal_p = astar::Pos2(1, 27);
+    use std::time::Instant;
+    let start = Instant::now();
+    for _ in 0..10000 {
+        clear_map(&mut array);
+        let mut astar_solver = astar::Astar::new(&start_p, &goal_p, &mut array);
+        astar_solver.astar_solver();
+    }
+    time_sum += start.elapsed().as_secs_f32();
+    println!("Time sum: {} s, average time: {} s", time_sum, time_sum / 10000.);
+
+    let block_width = 25.;
+    let half_rows = 0.5 * (rows.len() as f32);
+    let half_cols = 0.5 * (rows[0].len() as f32);
+    // 21 pixels per block
+    Model { map: array, offset_x: - half_cols * block_width, offset_y: half_rows * block_width, block_width:block_width, block_step:block_width + 1. }
+}
+
+fn clear_map(map:&mut Array2D<i32>) {
+    let map_rows = map.column_len();
+    let map_cols = map.row_len();
+    for i in 0..map_rows {
+        for j in 0..map_cols {  
+            if map[(i, j)] != 1 {
+                map[(i, j)] = 0;
+            }
+        }
+    }
+}
+
+fn update(_app: &App, _model: &mut Model, _update: Update) {}
+
+fn view(app: &App, model: &Model, frame: Frame) {
+    // Prepare to draw.
+    let colors = [WHITE, BLACK, DEEPSKYBLUE, LIGHTGREEN, ORANGE];
+    let draw = app.draw();
+
+    // Clear the background to purple.
+    draw.background().color(GRAY);
+
+    // Draw a blue ellipse with default size and position.
+    let map_rows = model.map.column_len();
+    let map_cols = model.map.row_len();
+    let map2draw = &model.map;
+    for i in 0..map_rows {
+        for j in 0..map_cols {
+            let color = colors[map2draw[(i, j)] as usize];
+            draw.rect()
+                .color(color)
+                .w(model.block_width)
+                .h(model.block_width)
+                .x_y(model.offset_x + model.block_step * (j as f32), model.offset_y - model.block_step * (i as f32));
+        }
+    }
+    // Write to the window frame.
+    draw.to_frame(app, &frame).unwrap();
 }
 
 fn main() {
-    test_array2d();
+    nannou::app(model).update(update).run();
 }
